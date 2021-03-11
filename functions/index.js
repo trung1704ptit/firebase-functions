@@ -15,7 +15,7 @@ const algoliaClient = algoliasearch(
 // Since I'm using develop and production environments, I'm automatically defining
 // the index name according to which environment is running. functions.config().projectId is a default
 // property set by Cloud Functions.
-const collectionIndex = algoliaClient.initIndex("jobfast");
+const collectionIndex = algoliaClient.initIndex("jobs");
 
 // Create a HTTP request cloud function.
 exports.sendCollectionToAlgolia = functions.https.onRequest(
@@ -26,7 +26,7 @@ exports.sendCollectionToAlgolia = functions.https.onRequest(
     const algoliaRecords = [];
 
     // Retrieve all documents from the COLLECTION collection.
-    const querySnapshot = await db.collection("jobfast").get();
+    const querySnapshot = await db.collection("jobs").get();
 
     querySnapshot.docs.forEach((doc) => {
       const document = doc.data();
@@ -56,7 +56,7 @@ async function saveDocumentInAlgolia(snapshot) {
       // Please notice: isIncomplete is a custom property
       // I'm using to control which documents should be indexed by Algolia.
       // You will not find it in any documention, and can remove in your implementation.
-      if (record.isIncomplete === false) {
+      if (!record.isIncomplete) {
         // We only index products that are complete.
         record.objectID = snapshot.id;
 
@@ -82,7 +82,7 @@ async function updateDocumentInAlgolia(change) {
       // If the doc was COMPLETE and is now INCOMPLETE, it was
       // previously indexed in algolia and must now be removed.
       await deleteDocumentFromAlgolia(change.after);
-    } else if (docAfterChange.isIncomplete === false) {
+    } else if (!docAfterChange.isIncomplete) {
       await saveDocumentInAlgolia(change.after);
     }
   }
@@ -96,19 +96,19 @@ async function deleteDocumentFromAlgolia(snapshot) {
 }
 
 exports.collectionOnCreate = functions.firestore
-  .document("jobfast/{job_id}")
+  .document("jobs/{objectID}")
   .onCreate(async (snapshot, context) => {
     await saveDocumentInAlgolia(snapshot);
   });
 
 exports.collectionOnUpdate = functions.firestore
-  .document("jobfast/{job_id}")
+  .document("jobs/{objectID}")
   .onUpdate(async (change, context) => {
     await updateDocumentInAlgolia(change);
   });
 
 exports.collectionOnDelete = functions.firestore
-  .document("jobfast/{job_id}")
+  .document("jobs/{objectID}")
   .onDelete(async (snapshot, context) => {
     await deleteDocumentFromAlgolia(snapshot);
   });
