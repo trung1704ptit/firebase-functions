@@ -33,7 +33,7 @@ exports.sendCollectionToAlgolia = functions.https.onRequest(
       // Essentially, you want your records to contain any information that facilitates search,
       // display, filtering, or relevance. Otherwise, you can leave it out.
       const record = {
-        objectID: doc.id,
+        job_id: doc.id,
         ...document
       };
 
@@ -58,7 +58,7 @@ async function saveDocumentInAlgolia(snapshot) {
       // You will not find it in any documention, and can remove in your implementation.
       if (!record.isIncomplete) {
         // We only index products that are complete.
-        record.objectID = snapshot.id;
+        record.job_id = snapshot.id;
 
         // In this example, we are including all properties of the Firestore document
         // in the Algolia record, but do remember to evaluate if they are all necessary.
@@ -90,25 +90,25 @@ async function updateDocumentInAlgolia(change) {
 
 async function deleteDocumentFromAlgolia(snapshot) {
   if (snapshot.exists) {
-    const objectID = snapshot.id;
-    await collectionIndex.deleteObject(objectID);
+    const job_id = snapshot.id;
+    await collectionIndex.deleteObject(job_id);
   }
 }
 
 exports.collectionOnCreate = functions.firestore
-  .document("jobs/{objectID}")
+  .document("jobs/{job_id}")
   .onCreate(async (snapshot, context) => {
     await saveDocumentInAlgolia(snapshot);
   });
 
 exports.collectionOnUpdate = functions.firestore
-  .document("jobs/{objectID}")
+  .document("jobs/{job_id}")
   .onUpdate(async (change, context) => {
     await updateDocumentInAlgolia(change);
   });
 
 exports.collectionOnDelete = functions.firestore
-  .document("jobs/{objectID}")
+  .document("jobs/{job_id}")
   .onDelete(async (snapshot, context) => {
     await deleteDocumentFromAlgolia(snapshot);
   });
